@@ -1,0 +1,318 @@
+:root{
+  --bg:#0b0c10;
+
+  /* カード背景を少し明るく */
+  --card:#1b1f2a;
+
+  /* メイン文字：ほぼ白（はっきり） */
+  --text:#000000;
+
+  /* 補助文字：青みグレーで視認性UP */
+  --muted:#000000;
+
+  --line:#2f3547;
+
+  /* ボタン */
+  --btn:#2a2f42;
+  --btn2:#343a52;
+
+  /* アクセント */
+  --good:#7dd3fc;   /* 信頼 */
+  --bad:#fb7185;    /* 危険 */
+  --ok:#a7f3d0;     /* 安心 */
+}
+
+
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  background: #fff0f6; /* 完全ピンク */
+  color:var(--text);
+}
+
+
+
+.header{
+  position:sticky; top:0;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 14px 10px;
+  background: #ffe0ec;           /* ピンク */
+  border-bottom:1px solid #f3c6da;
+  z-index:10;
+}
+
+.title{font-weight:800; letter-spacing:.02em}
+
+.container{
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 12px 12px 92px;
+}
+
+.screen{display:none}
+.screen.is-active{display:block}
+
+.card{
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;
+  padding:14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  margin-bottom:12px;
+}
+.card-title{
+  margin:0 0 10px;
+  font-size:14px;
+  color:var(--muted);
+  font-weight:700;
+}
+
+.hero{
+  text-align:center;
+}
+.cat-face{
+  font-size:42px;
+  line-height:1.1;
+  margin-top:6px;
+  margin-bottom:10px;
+}
+.cat-name-row{
+  display:flex; align-items:center; justify-content:center;
+  gap:10px;
+}
+.cat-name{
+  font-size:20px;
+  font-weight:900;
+}
+.timer{
+  margin-top:10px;
+  color:var(--muted);
+  font-size:12px;
+}
+
+.stat{
+  display:grid;
+  grid-template-columns: 82px 1fr 38px;
+  gap:10px;
+  align-items:center;
+  padding:8px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.stat:last-child{border-bottom:none}
+.stat-label{font-size:13px; color:#000000}
+.stat-val{font-variant-numeric: tabular-nums; text-align:right; color:var(--muted); font-size:12px}
+
+.meter{
+  height:10px;
+  border-radius:999px;
+  background: rgba(255,255,255,.08);
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.06);
+}
+.bar{
+  height:100%;
+  width:0%;
+  background: var(--bad);
+  border-radius:999px;
+  transition: width .2s ease;
+}
+.bar-good{ background: var(--good); }
+
+.warnings{
+  margin-top:12px;
+  display:grid;
+  gap:8px;
+}
+.warn{
+  padding:10px 12px;
+  border-radius:14px;
+  background: rgba(251,113,133,.12);
+  border:1px solid rgba(251,113,133,.25);
+  color:#ffd1d9;
+  font-size:13px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px;
+}
+
+.btn{
+  border:none;
+  border-radius:14px;
+  padding:12px 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+  color:var(--text);
+  font-weight:800;
+  cursor:pointer;
+  transition: transform .05s ease, background .2s ease;
+  user-select:none;
+}
+.btn:active{ transform: translateY(1px); }
+.btn:hover{ background: linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.08)); }
+.btn-small{ padding:8px 10px; font-weight:800; font-size:12px; }
+.btn-ghost{
+  background: transparent;
+  border:1px solid rgba(255,255,255,.12);
+  color:var(--muted);
+}
+.action{ font-size:15px; }
+
+.result{
+  margin-top:12px;
+  padding:12px;
+  border-radius:16px;
+  background: rgba(125,211,252,.10);
+  border:1px solid #000000;
+  color:#000000;
+  font-size:14px;
+  min-height:48px;
+  display:flex;
+  align-items:center;
+}
+
+.note{
+  margin-top:10px;
+  color:var(--muted);
+  font-size:12px;
+  display:grid;
+  gap:6px;
+}
+
+.log{
+  display:grid;
+  gap:8px;
+  margin-bottom:10px;
+}
+.log-item{
+  padding:10px 12px;
+  border-radius:14px;
+  background: rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.08);
+  color:#000000;
+  font-size:13px;
+  line-height:1.4;
+}
+.log-time{ color: var(--muted); font-size:11px; margin-top:4px; }
+
+.tabbar{
+  position:fixed; left:0; right:0; bottom:0;
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  background: #ffe0ec;            /* ピンク */
+  border-top:1px solid #f3c6da;
+  padding:10px 10px calc(10px + env(safe-area-inset-bottom));
+}
+
+.tab{
+  border:none;
+  background: transparent;
+  color: var(--muted);
+  font-weight:900;
+  padding:10px 0;
+  border-radius:14px;
+  cursor:pointer;
+}
+.tab.is-active{
+  background: rgba(255,255,255,.07);
+  color: var(--text);
+}
+.cat-face img{
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 12px 28px rgba(0,0,0,.25);
+}
+/* 猫型ボタン */
+.cat-grid{
+  gap:12px;
+}
+
+.catbtn{
+  position: relative;
+  height: 120px;
+  padding: 0;
+  border-radius: 18px; /* 外枠は丸く、形はSVGで出す */
+  background: transparent;
+  border: none;
+  overflow: visible;
+}
+
+/* 猫シルエット本体 */
+.catshape{
+  position:absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.35));
+}
+
+/* 猫の塗り（ボタンの見た目） */
+.catshape path{
+  fill: #f8fafc;              /* ほぼ白（やさしい） */
+  stroke: #c7d2fe;            /* うす紫の輪郭 */
+  stroke-width: 2.5;
+}
+
+
+/* 中身（絵文字＋文字） */
+.catbtn-content{
+  position: relative;
+  z-index: 1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height: 100%;
+  text-align:center;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1.05;
+  text-shadow: 0 1px 4px rgba(0,0,0,.55);
+}
+
+/* 押した時の反応 */
+.catbtn:active .catshape path{
+  transform: translateY(1px);
+  fill: rgba(255,255,255,.14);
+}
+
+/* ホバー（PC向け） */
+.catbtn:hover .catshape path{
+  fill: rgba(255,255,255,.16);
+}
+
+/* タップしやすくする（スマホ） */
+.catbtn{
+  touch-action: manipulation;
+}
+/* HOME 信頼イベント通知 */
+.home-notice{
+  margin: 12px 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff7ed, #ffedd5);
+  border: 2px solid #fdba74;
+  color: #7c2d12;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: 0 12px 26px rgba(0,0,0,.25);
+  animation: popIn .25s ease-out;
+}
+
+@keyframes popIn{
+  from{
+    transform: scale(.96) translateY(6px);
+    opacity: 0;
+  }
+  to{
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+

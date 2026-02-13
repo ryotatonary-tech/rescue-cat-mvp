@@ -1,0 +1,22 @@
+{
+  "name": "保護猫育成",
+  "short_name": "保護猫",
+  "description": "保護猫と少しずつ信頼関係を育てるミニゲーム",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b0c10",
+  "theme_color": "#0b0c10",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
