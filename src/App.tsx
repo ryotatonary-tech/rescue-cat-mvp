@@ -6,12 +6,14 @@ import { CatAvatar } from './components/game/CatAvatar';
 import { ActionButtons } from './components/game/ActionButtons';
 import { LogList } from './components/game/LogList';
 import { TabNav, type TabKey } from './components/layout/TabNav';
-import { AlertCircle, Trash2, Edit2, RotateCcw, HandHeart, ScrollText } from 'lucide-react';
+import { VersionModal } from './components/game/VersionModal';
+import { AlertCircle, Trash2, Edit2, RotateCcw, HandHeart, ScrollText, Info } from 'lucide-react';
 
 function App() {
   const { state, doAction, processTick, renameCat, resetGame, clearLog } = useGameState();
   const { nextTickLabel } = useGameLoop(state.lastTickAt, processTick);
   const [activeTab, setActiveTab] = useState<TabKey>('home');
+  const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
 
   // Helper to handle renaming
   const handleRename = () => {
@@ -30,10 +32,17 @@ function App() {
           <div className="font-bold text-lg text-orange-800 flex items-center gap-2">
             🐾 Rescue Cat Life
           </div>
-          <button onClick={resetGame} className="text-xs text-gray-400 hover:text-red-400 transition-colors">
-            <RotateCcw size={16} />
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setIsVersionModalOpen(true)} className="text-xs text-gray-400 hover:text-orange-500 transition-colors">
+              <Info size={16} />
+            </button>
+            <button onClick={resetGame} className="text-xs text-gray-400 hover:text-red-400 transition-colors">
+              <RotateCcw size={16} />
+            </button>
+          </div>
         </header>
+
+        <VersionModal isOpen={isVersionModalOpen} onClose={() => setIsVersionModalOpen(false)} />
 
         {/* Home Notice */}
         {state.homeNotice && (
