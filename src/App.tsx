@@ -52,7 +52,7 @@ function App() {
                 <h2 className="text-2xl font-black text-gray-800 inline-block relative z-10">
                   {state.cat.name}
                 </h2>
-                <button onClick={handleRename} className="ml-2 text-gray-400 hover:text-orange-500 align-middle">
+                <button onClick={handleRename} className="ml-2 text-gray-400 hover:text-orange-500 align-middle relative z-20">
                   <Edit2 size={14} />
                 </button>
                 <div className="bg-yellow-200/50 absolute bottom-1 left-0 right-0 h-3 -z-0 -rotate-1 rounded-full"></div>
