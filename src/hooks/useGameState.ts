@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { GameState, ActionType } from '../lib/types';
+import type { GameState, ActionType, CatVariant } from '../lib/types';
 import { ACTIONS, STORAGE_KEY, TICK, TICK_MINUTES, TRUST_EVENTS, MAX_LOGS } from '../lib/constants';
 import { clamp, nowMs, formatTime, generateId } from '../lib/utils';
 
 const defaultState: GameState = {
-    cat: { name: "ミケ" },
+    cat: { name: "ミケ", variant: 'white' },
     stats: { hunger: 30, stress: 20, dirty: 15, trust: 0 },
     lastTickAt: nowMs(),
     unlocked: { trustEvents: [] },
@@ -22,6 +22,11 @@ export function useGameState() {
                 const parsed = JSON.parse(stored);
                 // Simple validation
                 if (parsed.stats && parsed.cat) {
+                    // Start: Migration for existing data without variant
+                    if (!parsed.cat.variant) {
+                        parsed.cat.variant = 'white';
+                    }
+                    // End: Migration
                     return parsed;
                 }
             }
@@ -168,6 +173,14 @@ export function useGameState() {
         }));
     }, []);
 
+    const setVariant = useCallback((variant: CatVariant) => {
+        setState(prev => ({
+            ...prev,
+            cat: { ...prev.cat, variant },
+            logs: [{ id: generateId(), text: `毛色が変わった気がする…？`, timestamp: formatTime() }, ...prev.logs]
+        }));
+    }, []);
+
     const resetGame = useCallback(() => {
         if (confirm("はじめからにしますか？（今のデータは消えます）")) {
             setState(defaultState);
@@ -188,6 +201,7 @@ export function useGameState() {
         doAction,
         processTick,
         renameCat,
+        setVariant,
         resetGame,
         clearLog
     };

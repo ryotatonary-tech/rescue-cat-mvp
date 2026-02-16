@@ -1,5 +1,8 @@
+export type CatVariant = 'white' | 'black' | 'orange' | 'calico' | 'cream';
+
 export interface CatState {
     name: string;
+    variant: CatVariant;
 }
 
 export interface Stats {

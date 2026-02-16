@@ -3,17 +3,19 @@ import { useGameState } from './hooks/useGameState';
 import { useGameLoop } from './hooks/useGameLoop';
 import { StatusPanel } from './components/game/StatusPanel';
 import { CatAvatar } from './components/game/CatAvatar';
+import { CustomizeModal } from './components/game/CustomizeModal';
 import { ActionButtons } from './components/game/ActionButtons';
 import { LogList } from './components/game/LogList';
 import { TabNav, type TabKey } from './components/layout/TabNav';
 import { VersionModal } from './components/game/VersionModal';
-import { AlertCircle, Trash2, Edit2, RotateCcw, HandHeart, ScrollText, Info } from 'lucide-react';
+import { AlertCircle, Trash2, Edit2, RotateCcw, HandHeart, ScrollText, Info, Palette } from 'lucide-react';
 
 function App() {
-  const { state, doAction, processTick, renameCat, resetGame, clearLog } = useGameState();
+  const { state, doAction, processTick, renameCat, setVariant, resetGame, clearLog } = useGameState();
   const { nextTickLabel } = useGameLoop(state.lastTickAt, processTick);
   const [activeTab, setActiveTab] = useState<TabKey>('home');
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
+  const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
 
   // Helper to handle renaming
   const handleRename = () => {
@@ -36,6 +38,9 @@ function App() {
             <button onClick={() => setIsVersionModalOpen(true)} className="text-xs text-gray-400 hover:text-orange-500 transition-colors">
               <Info size={16} />
             </button>
+            <button onClick={() => setIsCustomizeModalOpen(true)} className="text-xs text-gray-400 hover:text-pink-500 transition-colors">
+              <Palette size={16} />
+            </button>
             <button onClick={resetGame} className="text-xs text-gray-400 hover:text-red-400 transition-colors">
               <RotateCcw size={16} />
             </button>
@@ -43,6 +48,12 @@ function App() {
         </header>
 
         <VersionModal isOpen={isVersionModalOpen} onClose={() => setIsVersionModalOpen(false)} />
+        <CustomizeModal
+          isOpen={isCustomizeModalOpen}
+          onClose={() => setIsCustomizeModalOpen(false)}
+          currentVariant={state.cat.variant}
+          onSelectVariant={(v) => { setVariant(v); setIsCustomizeModalOpen(false); }}
+        />
 
         {/* Home Notice */}
         {state.homeNotice && (
@@ -71,7 +82,7 @@ function App() {
                 Next Update: {nextTickLabel}
               </div>
 
-              <CatAvatar stats={state.stats} />
+              <CatAvatar stats={state.stats} variant={state.cat.variant} />
 
               <div className="mt-8">
                 <StatusPanel stats={state.stats} />
