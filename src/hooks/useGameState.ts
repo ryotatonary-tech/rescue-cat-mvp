@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { GameState, ActionType, CatVariant } from '../lib/types';
-import { ACTIONS, STORAGE_KEY, TICK, TICK_MINUTES, TRUST_EVENTS, MAX_LOGS } from '../lib/constants';
+import { ACTIONS, STORAGE_KEY, TICK, TICK_MINUTES, TRUST_EVENTS, MAX_LOGS, CRISIS_THRESHOLD, TRUST_DECAY } from '../lib/constants';
 import { clamp, nowMs, formatTime, generateId } from '../lib/utils';
 
 const defaultState: GameState = {
@@ -81,6 +81,24 @@ export function useGameState() {
                 newStats.stress = clamp(newStats.stress + stressInc);
             }
 
+            // Trust Decay Logic
+            // If any stat is above crisis threshold, trust decreases
+            const isCrisis = newStats.hunger >= CRISIS_THRESHOLD || newStats.stress >= CRISIS_THRESHOLD || newStats.dirty >= CRISIS_THRESHOLD;
+
+            let trustDecayed = 0;
+            if (isCrisis) {
+                for (let i = 0; i < ticks; i++) {
+                    // Simple decay: 1 per tick if in crisis
+                    // Logic note: stat increases per tick, so strict tick-by-tick simulation might be better,
+                    // but here we just check end state for simplicity or assume they were in crisis for the duration.
+                    // To be fair, let's just apply decay * ticks if they end up in crisis.
+                    if (newStats.trust > 0) {
+                        newStats.trust = clamp(newStats.trust - TRUST_DECAY);
+                        trustDecayed += TRUST_DECAY;
+                    }
+                }
+            }
+
             // Check events (though events usually trigger on action, maybe tick updates trust? NO, tick only lowers stats derived things)
             // Actually trusted is not changed by tick in original code.
 
@@ -90,8 +108,13 @@ export function useGameState() {
             if (ticks >= 2) {
                 const text = `時間がたった。様子を見てみよう（+${ticks}tick）`;
                 newLogs.unshift({ id: generateId(), text, timestamp: formatTime() });
-                if (newLogs.length > MAX_LOGS) newLogs.length = MAX_LOGS;
             }
+
+            if (trustDecayed > 0) {
+                newLogs.unshift({ id: generateId(), text: `放置しすぎて信頼が下がってしまった…（-${trustDecayed}）`, timestamp: formatTime() });
+            }
+
+            if (newLogs.length > MAX_LOGS) newLogs.length = MAX_LOGS;
 
             return {
                 ...prev,

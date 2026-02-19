@@ -35,3 +35,6 @@ export const TRUST_EVENTS = [
 ];
 
 export const MAX_LOGS = 60;
+
+export const CRISIS_THRESHOLD = 80;
+export const TRUST_DECAY = 1;
