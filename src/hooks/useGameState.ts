@@ -5,7 +5,7 @@ import { clamp, nowMs, formatTime, generateId } from '../lib/utils';
 
 const defaultState: GameState = {
     cat: { name: "ミケ", variant: 'white' },
-    stats: { hunger: 30, stress: 20, dirty: 15, trust: 0 },
+    stats: { hunger: 30, stress: 20, dirty: 15, trust: 10 },
     lastTickAt: nowMs(),
     unlocked: { trustEvents: [] },
     logs: [
@@ -60,6 +60,11 @@ export function useGameState() {
         };
     }, []);
 
+    const [trustDecreased, setTrustDecreased] = useState(false);
+
+    // Derived state for UI
+    const isCrisis = state.stats.hunger >= CRISIS_THRESHOLD || state.stats.stress >= CRISIS_THRESHOLD || state.stats.dirty >= CRISIS_THRESHOLD;
+
     const processTick = useCallback(() => {
         setState(prev => {
             const intervalMs = TICK_MINUTES * 60 * 1000;
@@ -82,25 +87,17 @@ export function useGameState() {
             }
 
             // Trust Decay Logic
-            // If any stat is above crisis threshold, trust decreases
-            const isCrisis = newStats.hunger >= CRISIS_THRESHOLD || newStats.stress >= CRISIS_THRESHOLD || newStats.dirty >= CRISIS_THRESHOLD;
+            const currentCrisis = newStats.hunger >= CRISIS_THRESHOLD || newStats.stress >= CRISIS_THRESHOLD || newStats.dirty >= CRISIS_THRESHOLD;
 
             let trustDecayed = 0;
-            if (isCrisis) {
+            if (currentCrisis) {
                 for (let i = 0; i < ticks; i++) {
-                    // Simple decay: 1 per tick if in crisis
-                    // Logic note: stat increases per tick, so strict tick-by-tick simulation might be better,
-                    // but here we just check end state for simplicity or assume they were in crisis for the duration.
-                    // To be fair, let's just apply decay * ticks if they end up in crisis.
                     if (newStats.trust > 0) {
                         newStats.trust = clamp(newStats.trust - TRUST_DECAY);
                         trustDecayed += TRUST_DECAY;
                     }
                 }
             }
-
-            // Check events (though events usually trigger on action, maybe tick updates trust? NO, tick only lowers stats derived things)
-            // Actually trusted is not changed by tick in original code.
 
             // Log for significant time pass
             let newLogs = [...prev.logs];
@@ -112,6 +109,14 @@ export function useGameState() {
 
             if (trustDecayed > 0) {
                 newLogs.unshift({ id: generateId(), text: `放置しすぎて信頼が下がってしまった…（-${trustDecayed}）`, timestamp: formatTime() });
+                // Trigger UI signal (side effect outside of reducer pattern, but okay for this simple hook)
+                setTrustDecreased(true);
+                // Auto-hide after 3s handled by component or timeout here? 
+                // It's cleaner to let UI handle the reset or use a timestamp.
+                // For now, we'll set it here and let UI effect reset it or use a timestamp. 
+                // Better: return a "lastTrustDecrease" timestamp in state? 
+                // Let's use the external state `trustDecreased` which we toggle.
+                setTimeout(() => setTrustDecreased(false), 5000);
             }
 
             if (newLogs.length > MAX_LOGS) newLogs.length = MAX_LOGS;
@@ -128,26 +133,12 @@ export function useGameState() {
 
     const doAction = useCallback((actionKey: ActionType) => {
         setState(prev => {
-            // First update tick if needed to keep time consistency
-            // Actually original code calls applyTickIfNeeded() first.
-            // But here we might want to do it in one atomic update or 
-            // rely on useGameLoop to have called it? 
-            // Safer to do it here logic-wise or just process logic on current state.
-            // Let's assume processTick runs on timer, but for action we calculate based on *current* view.
-            // If we delay tick, the user gains advantage.
-            // Let's copy the tick logic or just call it? calling it loops back to setState.
-            // We'll just do the action logic on `prev`.
-
-            // NOTE: In React, we shouldn't chain setStates easily. 
-            // We will perform the action on `prev`. The tick will catch up on next interval or we can inline it.
-            // For simplicity, we ignore "catch up tick" inside action to avoid complexity.
-            // The `useGameLoop` will trigger tick shortly anyway.
-
             const action = ACTIONS[actionKey];
             const s = prev.stats;
 
             // Trust mechanics
             let trustGain = action.trust;
+            // Play is hard if low trust
             if (actionKey === "play" && s.trust < 15) trustGain = 1;
 
             const newStats = {
@@ -181,9 +172,7 @@ export function useGameState() {
                 stats: newStats,
                 logs: newLogs,
                 unlocked: { trustEvents: eventResult.unlocked },
-                homeNotice: eventResult.notice || null // Action clears notice unless new one appears? 
-                // Original: state.homeNotice = null; then check events.
-                // So if event triggers, notice is set. If not, it's null.
+                homeNotice: eventResult.notice || null
             };
         });
     }, [unlockTrustEvents]);
@@ -221,6 +210,8 @@ export function useGameState() {
 
     return {
         state,
+        isCrisis,
+        trustDecreased,
         doAction,
         processTick,
         renameCat,

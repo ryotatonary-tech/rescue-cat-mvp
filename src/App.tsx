@@ -11,7 +11,7 @@ import { VersionModal } from './components/game/VersionModal';
 import { AlertCircle, Trash2, Edit2, RotateCcw, HandHeart, ScrollText, Info, Palette } from 'lucide-react';
 
 function App() {
-  const { state, doAction, processTick, renameCat, setVariant, resetGame, clearLog } = useGameState();
+  const { state, doAction, processTick, renameCat, setVariant, resetGame, clearLog, isCrisis, trustDecreased } = useGameState();
   const { nextTickLabel } = useGameLoop(state.lastTickAt, processTick);
   const [activeTab, setActiveTab] = useState<TabKey>('home');
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
@@ -55,8 +55,29 @@ function App() {
           onSelectVariant={(v) => { setVariant(v); setIsCustomizeModalOpen(false); }}
         />
 
-        {/* Home Notice */}
-        {state.homeNotice && (
+        {/* Crisis Overlay / Trust Decrease Notification */}
+        {trustDecreased && (
+          <div className="absolute top-20 left-0 right-0 z-50 flex justify-center pointer-events-none animate-in fade-in zoom-in duration-300">
+            <div className="bg-slate-800/90 text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-3 backdrop-blur-sm border border-slate-700">
+              <span className="text-2xl">💔</span>
+              <div>
+                <div className="font-bold text-sm">信頼が下がってしまった…</div>
+                <div className="text-xs text-slate-300">放置しすぎたみたい</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Crisis Warning Banner */}
+        {isCrisis && !trustDecreased && (
+          <div className="bg-red-500 text-white px-4 py-2 text-xs font-bold text-center animate-pulse sticky top-[60px] z-30 shadow-md flex items-center justify-center gap-2">
+            <AlertCircle size={14} className="animate-bounce" />
+            <span>ピンチ！このままだと信頼されなくなるかも…</span>
+          </div>
+        )}
+
+        {/* Home Notice (Secondary to Crisis) */}
+        {!isCrisis && state.homeNotice && (
           <div className="mx-4 mt-4 bg-gradient-to-r from-orange-100 to-pink-100 border border-orange-200 text-orange-800 px-4 py-3 rounded-xl shadow-sm flex items-center gap-2 animate-in slide-in-from-top-4 fade-in duration-500">
             <AlertCircle size={18} className="text-orange-500 shrink-0" />
             <span className="font-bold text-sm">{state.homeNotice}</span>
