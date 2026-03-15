@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { GameState, ActionType, CatVariant } from '../lib/types';
-import { ACTIONS, STORAGE_KEY, TICK, TICK_MINUTES, TRUST_EVENTS, MAX_LOGS, CRISIS_THRESHOLD, TRUST_DECAY } from '../lib/constants';
-import { clamp, nowMs, formatTime, generateId } from '../lib/utils';
+import { ACTIONS, STORAGE_KEY, TICK, TICK_MINUTES, TRUST_EVENTS, MAX_LOGS, CRISIS_THRESHOLD, TRUST_DECAY, ADOPTION_TRUST_THRESHOLD } from '../lib/constants';
+import { clamp, nowMs, formatTime, generateId, isTimeInWindow } from '../lib/utils';
 
 const defaultState: GameState = {
     cat: { name: "ミケ", variant: 'white' },
@@ -11,7 +11,10 @@ const defaultState: GameState = {
     logs: [
         { id: generateId(), text: "保護猫がやってきた。まずは距離感を大事にしよう。", timestamp: formatTime() }
     ],
-    homeNotice: null
+    homeNotice: null,
+    isAdopted: false,
+    history: [],
+    sleepWindow: { startTime: "23:00", endTime: "07:00", enabled: false }
 };
 
 export function useGameState() {
@@ -25,6 +28,11 @@ export function useGameState() {
                     // Start: Migration for existing data without variant
                     if (!parsed.cat.variant) {
                         parsed.cat.variant = 'white';
+                    }
+                    if (parsed.isAdopted === undefined) parsed.isAdopted = false;
+                    if (!parsed.history) parsed.history = [];
+                    if (!parsed.sleepWindow) {
+                        parsed.sleepWindow = { startTime: "23:00", endTime: "07:00", enabled: false };
                     }
                     // End: Migration
                     return parsed;
@@ -72,27 +80,29 @@ export function useGameState() {
             if (elapsed < intervalMs) return prev;
 
             const ticks = Math.floor(elapsed / intervalMs);
-            let newStats = { ...prev.stats };
+            const newStats = { ...prev.stats };
 
             // Apply ticks
-            for (let i = 0; i < ticks; i++) {
-                newStats.hunger = clamp(newStats.hunger + TICK.hunger);
-                newStats.dirty = clamp(newStats.dirty + TICK.dirty);
-
-                let stressInc = TICK.stressBase;
-                if (newStats.dirty >= TICK.stressDirtyBonusThreshold) {
-                    stressInc += TICK.stressDirtyBonus;
-                }
-                newStats.stress = clamp(newStats.stress + stressInc);
-            }
-
-            // Trust Decay Logic
-            const currentCrisis = newStats.hunger >= CRISIS_THRESHOLD || newStats.stress >= CRISIS_THRESHOLD || newStats.dirty >= CRISIS_THRESHOLD;
-
             let trustDecayed = 0;
-            if (currentCrisis) {
-                for (let i = 0; i < ticks; i++) {
-                    if (newStats.trust > 0) {
+            for (let i = 0; i < ticks; i++) {
+                const tickTime = prev.lastTickAt + (i + 1) * intervalMs;
+                const inSleepWindow = prev.sleepWindow?.enabled && isTimeInWindow(tickTime, prev.sleepWindow.startTime, prev.sleepWindow.endTime);
+
+                if (inSleepWindow) {
+                    newStats.stress = clamp(newStats.stress - 1);
+                } else {
+                    newStats.hunger = clamp(newStats.hunger + TICK.hunger);
+                    newStats.dirty = clamp(newStats.dirty + TICK.dirty);
+
+                    let stressInc = TICK.stressBase;
+                    if (newStats.dirty >= TICK.stressDirtyBonusThreshold) {
+                        stressInc += TICK.stressDirtyBonus;
+                    }
+                    newStats.stress = clamp(newStats.stress + stressInc);
+
+                    // Crisis check
+                    const currentCrisis = newStats.hunger >= CRISIS_THRESHOLD || newStats.stress >= CRISIS_THRESHOLD || newStats.dirty >= CRISIS_THRESHOLD;
+                    if (currentCrisis && newStats.trust > 0) {
                         newStats.trust = clamp(newStats.trust - TRUST_DECAY);
                         trustDecayed += TRUST_DECAY;
                     }
@@ -100,8 +110,8 @@ export function useGameState() {
             }
 
             // Log for significant time pass
-            let newLogs = [...prev.logs];
-            let homeNotice = prev.homeNotice;
+            const newLogs = [...prev.logs];
+            const homeNotice = prev.homeNotice;
             if (ticks >= 2) {
                 const text = `時間がたった。様子を見てみよう（+${ticks}tick）`;
                 newLogs.unshift({ id: generateId(), text, timestamp: formatTime() });
@@ -121,12 +131,16 @@ export function useGameState() {
 
             if (newLogs.length > MAX_LOGS) newLogs.length = MAX_LOGS;
 
+            // Check Adoption Condition during ticks
+            const isAdopted = prev.isAdopted || newStats.trust >= ADOPTION_TRUST_THRESHOLD;
+
             return {
                 ...prev,
                 stats: newStats,
                 lastTickAt: prev.lastTickAt + ticks * intervalMs,
                 logs: newLogs,
-                homeNotice
+                homeNotice,
+                isAdopted
             };
         });
     }, []);
@@ -160,19 +174,23 @@ export function useGameState() {
             // Check events
             const eventResult = unlockTrustEvents(newStats.trust, prev.unlocked.trustEvents);
 
-            let newLogs = [...prev.logs];
+            const newLogs = [...prev.logs];
             newLogs.unshift({ id: generateId(), text: `${action.label}：${msg}`, timestamp: formatTime() });
             if (eventResult.logText) {
                 newLogs.unshift({ id: generateId(), text: eventResult.logText, timestamp: formatTime() });
             }
             if (newLogs.length > MAX_LOGS) newLogs.length = MAX_LOGS;
 
+            // Check Adoption Condition during actions
+            const isAdopted = prev.isAdopted || newStats.trust >= ADOPTION_TRUST_THRESHOLD;
+
             return {
                 ...prev,
                 stats: newStats,
                 logs: newLogs,
                 unlocked: { trustEvents: eventResult.unlocked },
-                homeNotice: eventResult.notice || null
+                homeNotice: eventResult.notice || null,
+                isAdopted
             };
         });
     }, [unlockTrustEvents]);
@@ -195,8 +213,32 @@ export function useGameState() {
 
     const resetGame = useCallback(() => {
         if (confirm("はじめからにしますか？（今のデータは消えます）")) {
-            setState(defaultState);
+            setState(prev => ({
+                ...defaultState,
+                history: prev.history // preserve history on explicit reset
+            }));
         }
+    }, []);
+
+    const adoptCat = useCallback(() => {
+        setState(prev => {
+            const catVariants: CatVariant[] = ['white', 'black', 'orange', 'calico', 'cream'];
+            const randomVariant = catVariants[Math.floor(Math.random() * catVariants.length)];
+
+            const newHistoryRecord = {
+                id: generateId(),
+                name: prev.cat.name,
+                variant: prev.cat.variant,
+                adoptedAt: nowMs(),
+                daysTakenCareOf: 1 // could calculate based on first seen time if we added it, simplify for now
+            };
+
+            return {
+                ...defaultState,
+                cat: { name: "新しい保護猫", variant: randomVariant },
+                history: [newHistoryRecord, ...prev.history]
+            };
+        });
     }, []);
 
     const clearLog = useCallback(() => {
@@ -208,6 +250,13 @@ export function useGameState() {
         }
     }, []);
 
+    const setSleepWindow = useCallback((startTime: string, endTime: string, enabled: boolean) => {
+        setState(prev => ({
+            ...prev,
+            sleepWindow: { startTime, endTime, enabled }
+        }));
+    }, []);
+
     return {
         state,
         isCrisis,
@@ -217,6 +266,8 @@ export function useGameState() {
         renameCat,
         setVariant,
         resetGame,
-        clearLog
+        clearLog,
+        adoptCat,
+        setSleepWindow
     };
 }

@@ -1,9 +1,9 @@
 import type { ActionEffect, ActionType } from "./types";
 
 export const STORAGE_KEY = "rescue_cat_react_v1";
-export const TICK_MINUTES = 5;
+export const TICK_MINUTES = 15;
 
-// Tick effects (every 5 minutes)
+// Tick effects (every 15 minutes)
 export const TICK = {
     hunger: 4,
     dirty: 3,
@@ -22,19 +22,21 @@ export const ACTIONS: Record<ActionType, ActionEffect> = {
 
 // Trust Events
 export const TRUST_EVENTS = [
-    { at: 5, text: "ちらっ…（目が合った気がする）" },
-    { at: 10, text: "2歩だけ近づいてきた" },
+    { at: 5, text: "少し近づいてきた" },
+    { at: 10, text: "匂いを嗅いできた" },
     { at: 15, text: "おもちゃを見てる" },
-    { at: 20, text: "小さく「にゃ」って言った" },
+    { at: 20, text: "足元に来た" },
     { at: 25, text: "ごはんのあとに座って待ってる" },
     { at: 30, text: "目の前で寝た" },
     { at: 40, text: "ゴロゴロ音が聞こえる" },
-    { at: 50, text: "手にすりすりしてきた" },
+    { at: 50, text: "膝に乗る" },
     { at: 60, text: "ちょっとだけ抱っこOK" },
-    { at: 75, text: "膝に乗ってきた（優勝）" },
+    { at: 75, text: "ずっと一緒にいたいアピール" },
 ];
 
 export const MAX_LOGS = 60;
 
 export const CRISIS_THRESHOLD = 80;
 export const TRUST_DECAY = 1;
+
+export const ADOPTION_TRUST_THRESHOLD = 100;

@@ -8,14 +8,22 @@ import { ActionButtons } from './components/game/ActionButtons';
 import { LogList } from './components/game/LogList';
 import { TabNav, type TabKey } from './components/layout/TabNav';
 import { VersionModal } from './components/game/VersionModal';
-import { AlertCircle, Trash2, Edit2, RotateCcw, HandHeart, ScrollText, Info, Palette } from 'lucide-react';
+import { HistoryModal } from './components/game/HistoryModal';
+import { EndingScreen } from './components/game/EndingScreen';
+import { SettingsModal } from './components/game/SettingsModal';
+import { AlertCircle, Trash2, Edit2, RotateCcw, HandHeart, ScrollText, Info, Palette, Award, Settings, Moon } from 'lucide-react';
+import { isTimeInWindow, nowMs } from './lib/utils';
 
 function App() {
-  const { state, doAction, processTick, renameCat, setVariant, resetGame, clearLog, isCrisis, trustDecreased } = useGameState();
+  const { state, doAction, processTick, renameCat, setVariant, resetGame, clearLog, isCrisis, trustDecreased, adoptCat, setSleepWindow } = useGameState();
   const { nextTickLabel } = useGameLoop(state.lastTickAt, processTick);
   const [activeTab, setActiveTab] = useState<TabKey>('home');
   const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
   const [isCustomizeModalOpen, setIsCustomizeModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  const isSleeping = state.sleepWindow?.enabled && isTimeInWindow(nowMs(), state.sleepWindow.startTime, state.sleepWindow.endTime);
 
   // Helper to handle renaming
   const handleRename = () => {
@@ -35,6 +43,12 @@ function App() {
             🐾 Rescue Cat Life
           </div>
           <div className="flex gap-2">
+            <button onClick={() => setIsHistoryModalOpen(true)} className="text-xs text-gray-400 hover:text-orange-500 transition-colors" title="卒業アルバム">
+              <Award size={16} />
+            </button>
+            <button onClick={() => setIsSettingsModalOpen(true)} className="text-xs text-gray-400 hover:text-indigo-500 transition-colors" title="設定">
+              <Settings size={16} />
+            </button>
             <button onClick={() => setIsVersionModalOpen(true)} className="text-xs text-gray-400 hover:text-orange-500 transition-colors">
               <Info size={16} />
             </button>
@@ -54,6 +68,22 @@ function App() {
           currentVariant={state.cat.variant}
           onSelectVariant={(v) => { setVariant(v); setIsCustomizeModalOpen(false); }}
         />
+        <HistoryModal
+          isOpen={isHistoryModalOpen}
+          onClose={() => setIsHistoryModalOpen(false)}
+          history={state.history}
+        />
+        <SettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          sleepWindow={state.sleepWindow || { startTime: "23:00", endTime: "07:00", enabled: false }}
+          onSave={setSleepWindow}
+        />
+
+        {/* Ending Screen Trigger */}
+        {state.isAdopted && (
+          <EndingScreen cat={state.cat} onAdopt={adoptCat} />
+        )}
 
         {/* Crisis Overlay / Trust Decrease Notification */}
         {trustDecreased && (
@@ -99,9 +129,18 @@ function App() {
                 <div className="bg-yellow-200/50 absolute bottom-1 left-0 right-0 h-3 -z-0 -rotate-1 rounded-full"></div>
               </div>
 
-              <div className="text-center text-xs text-gray-400 mb-6 font-mono bg-gray-100 inline-block px-3 py-1 rounded-full mx-auto">
+              <div className="text-center text-xs text-gray-400 mb-4 font-mono bg-gray-100 inline-block px-3 py-1 rounded-full mx-auto">
                 Next Update: {nextTickLabel}
               </div>
+
+              {isSleeping && (
+                <div className="flex justify-center mb-4">
+                  <div className="bg-indigo-900/80 backdrop-blur-sm text-indigo-100 px-4 py-2 rounded-full text-sm font-bold shadow-md flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
+                    <Moon size={16} className="text-indigo-300" />
+                    <span>すやすや睡眠中...</span>
+                  </div>
+                </div>
+              )}
 
               <CatAvatar stats={state.stats} variant={state.cat.variant} />
 
@@ -152,7 +191,7 @@ function App() {
               </div>
 
               <div className="mt-8 text-xs text-gray-400 space-y-1 text-center">
-                <p>※ 5分ごとに少しお腹が減ったりします</p>
+                <p>※ 15分ごとに少しお腹が減ったりします</p>
                 <p>※ 信頼関係を築くとイベントが発生します</p>
               </div>
             </div>
